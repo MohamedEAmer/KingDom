@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+@import "tailwindcss";
+@import "keen-slider/keen-slider.min.css";
+
+@theme{
+  --color-primary: #F84565;
+  --color-primary-dull: #D63854;
+}
+
+*{
+  font-family: "Outfit", sans-serif;
+  scrollbar-width: thin;
+  scrollbar-color: #787777 #1e1e1e;
+}
+
+body{
+  color: white;
+  background-color: #09090B;
+}
+
+@keyframes flipY {
+  0% {
+    transform: rotateY(0deg);
+  }
+  50% {
+    transform: rotateY(180deg);
+  }
+  100% {
+    transform: rotateY(360deg);
+  }
+}
+
+.animate-flipY {
+  animation: flipY 5s linear infinite;
+}
+
+@keyframes fadeSlide {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -20px) scale(0.9);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, 0px) scale(1);
+  }
+  85% {
+    opacity: 1;
+    transform: translate(-50%, 0px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -20px) scale(0.9);
+  }
+}
+
+.animate-fadeSlide {
+  animation: fadeSlide 3s ease forwards;
+}
