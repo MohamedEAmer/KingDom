@@ -3,6 +3,7 @@ import { Trash2, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import {useNavigate } from 'react-router-dom';
 import { dummyEvents } from '../../public/assets'; // Adjust path if needed
 import { UserContext } from '../context/userContext'
+import axios from 'axios';
 
 const EventManagement = () => {
   const [events, setEvents] = useState(dummyEvents);
@@ -12,17 +13,41 @@ const EventManagement = () => {
   const [mainImage, setMainImage] = useState(null);
   const [details, setDetails] = useState([]);
   const dialogRef = useRef(null);
-
+  const {setCurrentUser} = useContext(UserContext)
   const {currentUser} = useContext(UserContext)
   const token = currentUser?.token;
   const navigate = useNavigate()
 
-  useEffect(()=>{
-    if(!token || currentUser.role !== "Owner"){
-      showToast("You Can Not Reach This Page", "warning");
-      navigate('/')
-    }
-  }, [])
+  useEffect(() => {
+    const validateAdmin = async () => {
+      try {
+        const adminRes = await axios.get(
+          "http://localhost:3000/auth/type",
+          {
+            withCredentials: true,
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+  
+        if (
+          !token ||
+          !adminRes.data?.token||
+          adminRes.data?.normalUser
+        ) {
+          showToast("You Can Not Reach This Page", "warning");
+          setCurrentUser(null)
+          navigate("/");
+        }
+  
+      } catch (error) {
+        // console.log(error)
+        setCurrentUser(null)
+        navigate("/");
+      }
+    };
+  
+    validateAdmin();
+  }, []);
 
   function openDialog() {
     dialogRef.current?.showModal();

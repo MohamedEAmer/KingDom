@@ -51,107 +51,119 @@ export const dummyRanks = [
     {
       id: 0,
       image: "back.png",
-      name: "Grand Rebirth",
-      description: "A legendary event where players reset their power to gain enhanced abilities and exclusive titles.",
+      name: "Official Launch",
+      description: "⚔️ Official Launch – Kingdom of Secrets: Asda Evolution ⚔️",
       info: {
-        details: [
+        details : [
           {
             img: "img1.png",
-            text: "Reset your character and start a powerful new journey."
+            text: {
+              ar: "موقع إلكتروني جديد كليًا يتيح لك متابعة بيانات شخصيتك، تقدمك، إحصائياتك، وتطورك داخل اللعبة بشكل مباشر في أي وقت و ذلك بالاضافة الي العديد من الانظمة الجديدة التي تم تعديلها داخل اللعبه و سيتم الاعلان عنها مع افتتاح اللعبة.",
+              en: "A completely new website that allows you to track your character data, progress, statistics, and development anytime , adding some new systems that are fixed or added to the game and will be announced with the game release."
+            }
           },
           {
             img: "img2.png",
-            text: "Earn exclusive titles and glowing effects that show your rebirth status."
+            text: {
+              ar: "إمكانية استلام مكافآت المرحلة التجريبية باستخدام اسم المستخدم المسجّل عبر تطبيق التسجيل المسبق مع نظام متكامل لمتابعة واستلام الجوائز اليومية لمدة شهر كامل.",
+              en: "Claim Beta Phase rewards using your Appy-registered username, along with a complete system to track and claim daily rewards for a full month."
+            }
           },
           {
             img: "img3.png",
-            text: "Complete rebirth-only quests for rare rewards and items."
+            text: {
+              ar: "نظام باتل باس متكامل بمهام وأهداف مخصصة، يكافئ التقدم والاحتراف ويمنح جوائز حصرية داخل اللعبة.",
+              en: "A fully integrated Battle Pass system with dedicated missions and objectives, rewarding progress and mastery with exclusive in-game rewards."
+            }
           },
           {
             img: "img4.png",
-            text: "Stand out in the world with rebirth-only cosmetics and visual effects."
+            text: {
+              ar:"أنظمة متقدمة تشمل شحن النقاط بسهولة وأمان، متابعة مستوى الفيب وامتيازاته، بالإضافة إلى نظام تتبع الحروب، الألقاب، وترتيب النتائج بشكل مفصّل و المزيد و المزيد و مازال اعمل مستمرا لتقديم الافضل لكم.",
+              en: "Advanced systems including secure points recharge, VIP level tracking with privileges, and a full war & titles tracking system with detailed results , more and more to give you the best."
+            }
           }
         ]
       }
     },
     {
       id: 1,
-      image: "image1.png",
-      name: "Mystic Arena",
-      description: "Enter the Mystic Arena and fight to earn rare rewards in timed PvP combat challenges.",
+      image: "winter.png",
+      name: "Winter Event",
+      description: "❄️⚔️ When Winter Rules... Legends Are Born ⚔️❄️",
       info: {
         details: [
           {
-            img: "img1.png",
-            text: "Reset your character and start a powerful new journey."
+            img: "WinterSoon.png",
+            text: "Coming Soon...!"
           },
-          {
-            img: "img2.png",
-            text: "Earn exclusive titles and glowing effects that show your rebirth status."
-          },
-          {
-            img: "img3.png",
-            text: "Complete rebirth-only quests for rare rewards and items."
-          },
-          {
-            img: "img4.png",
-            text: "Stand out in the world with rebirth-only cosmetics and visual effects."
-          }
+          // {
+          //   img: "img2.png",
+          //   text: "Earn exclusive titles and glowing effects that show your rebirth status."
+          // },
+          // {
+          //   img: "img3.png",
+          //   text: "Complete rebirth-only quests for rare rewards and items."
+          // },
+          // {
+          //   img: "img4.png",
+          //   text: "Stand out in the world with rebirth-only cosmetics and visual effects."
+          // }
         ]
       }
     },
-    {
-      id: 2,
-      image: "image2.png",
-      name: "Treasure Hunt",
-      description: "Explore hidden corners of the map to uncover secret chests filled with gold and powerful items.",
-      info: {
-        details: [
-          {
-            img: "img1.png",
-            text: "Reset your character and start a powerful new journey."
-          },
-          {
-            img: "img2.png",
-            text: "Earn exclusive titles and glowing effects that show your rebirth status."
-          },
-          {
-            img: "img3.png",
-            text: "Complete rebirth-only quests for rare rewards and items."
-          },
-          {
-            img: "img4.png",
-            text: "Stand out in the world with rebirth-only cosmetics and visual effects."
-          }
-        ]
-      }
-    },
-    {
-      id: 3,
-      image: "image3.png",
-      name: "Festival of Flames",
-      description: "Celebrate the summer with fireworks, flame-themed cosmetics, and limited-time quests.",
-      info: {
-        details: [
-          {
-            img: "img1.png",
-            text: "Reset your character and start a powerful new journey."
-          },
-          {
-            img: "img2.png",
-            text: "Earn exclusive titles and glowing effects that show your rebirth status."
-          },
-          {
-            img: "img3.png",
-            text: "Complete rebirth-only quests for rare rewards and items."
-          },
-          {
-            img: "img4.png",
-            text: "Stand out in the world with rebirth-only cosmetics and visual effects."
-          }
-        ]
-      }
-    }
+    // {
+    //   id: 2,
+    //   image: "image2.png",
+    //   name: "Treasure Hunt",
+    //   description: "Explore hidden corners of the map to uncover secret chests filled with gold and powerful items.",
+    //   info: {
+    //     details: [
+    //       {
+    //         img: "img1.png",
+    //         text: "Reset your character and start a powerful new journey."
+    //       },
+    //       {
+    //         img: "img2.png",
+    //         text: "Earn exclusive titles and glowing effects that show your rebirth status."
+    //       },
+    //       {
+    //         img: "img3.png",
+    //         text: "Complete rebirth-only quests for rare rewards and items."
+    //       },
+    //       {
+    //         img: "img4.png",
+    //         text: "Stand out in the world with rebirth-only cosmetics and visual effects."
+    //       }
+    //     ]
+    //   }
+    // },
+    // {
+    //   id: 3,
+    //   image: "image3.png",
+    //   name: "Festival of Flames",
+    //   description: "Celebrate the summer with fireworks, flame-themed cosmetics, and limited-time quests.",
+    //   info: {
+    //     details: [
+    //       {
+    //         img: "img1.png",
+    //         text: "Reset your character and start a powerful new journey."
+    //       },
+    //       {
+    //         img: "img2.png",
+    //         text: "Earn exclusive titles and glowing effects that show your rebirth status."
+    //       },
+    //       {
+    //         img: "img3.png",
+    //         text: "Complete rebirth-only quests for rare rewards and items."
+    //       },
+    //       {
+    //         img: "img4.png",
+    //         text: "Stand out in the world with rebirth-only cosmetics and visual effects."
+    //       }
+    //     ]
+    //   }
+    // }
   ];
 
   export const dummyAccChars = [
@@ -218,20 +230,20 @@ export const dummyRanks = [
   export const dummyGamePics = [
     {
       image: "back.png",
-      title: "Return of the Shadows",
+      title: "⚔️ Official Launch – Kingdom of Secrets: Asda Evolution ⚔️",
     },
     {
-      image: "image1.png",
-      title: "Guild War: Battle for Honor",
+      image: "winter.png",
+      title: "Event : ❄️⚔️ When Winter Rules... Legends Are Born ⚔️❄️",
     },
-    {
-      image: "image2.png",
-      title: "New Hero: The Flame Reaper",
-    },
-    {
-      image: "image3.png",
-      title: "Event: Treasure Hunt Begins",
-    },
+    // {
+    //   image: "image2.png",
+    //   title: "New Hero: The Flame Reaper",
+    // },
+    // {
+    //   image: "image3.png",
+    //   title: "Event: Treasure Hunt Begins",
+    // },
   ];
   
 

@@ -77,6 +77,25 @@ export const addItem = async (req, res) => {
     }
   
     try {
+      const { AccountId } = req.user;
+  
+      const [sqlResult] = await sqlPool.query(
+        `SELECT Name, AccountId, RoleGroupName
+         FROM account
+         WHERE AccountId = ?`,
+        [AccountId]
+      );
+    
+      if (!sqlResult.length) {
+        return res.status(403).json({ message: "User not found" });
+      }
+    
+      const user = sqlResult[0];
+    
+      // console.log(user)
+      if(user.RoleGroupName !== "Owner" || user.Name !== "gmfirst"){
+        return res.status(403).json({ message: "Invalid User Role Or Admin" });
+      }
       // Get item name from asda2itemtemlate using the itemid
       const [items] = await sqlPool.query(
         'SELECT * FROM asda2itemtemlate WHERE id = ?',
@@ -143,12 +162,31 @@ export const editItem = async (req, res) => {
   }
 
   try {
+    const { AccountId } = req.user;
+  
+    const [sqlResult] = await sqlPool.query(
+      `SELECT Name, AccountId, RoleGroupName
+       FROM account
+       WHERE AccountId = ?`,
+      [AccountId]
+    );
+  
+    if (!sqlResult.length) {
+      return res.status(403).json({ message: "User not found" });
+    }
+  
+    const user = sqlResult[0];
+  
+    // console.log(user)
+    if(user.RoleGroupName !== "Owner" || user.Name !== "gmfirst"){
+      return res.status(403).json({ message: "Invalid User Role Or Admin" });
+    }
     // Get updated item data
     const [items] = await sqlPool.query(
       'SELECT * FROM webshop WHERE guid = ?',
       [guid]
     );
-    console.log(items[0].itemid);
+    // console.log(items[0].itemid);
 
     if (!items || items.length === 0) {
       return res.status(404).json({ message: 'Item not found in webshop.' });
@@ -202,11 +240,165 @@ export const editItem = async (req, res) => {
   }
 };
 
+// export const buyItem = async (req, res) => {
+//   const { receiverName, guid } = req.params;
+//   const { AccountId, Name, itemId, itemName, amount, price, points } = req.body;
+
+//   if (!guid || !receiverName || !AccountId || !Name || !itemId || !itemName || !amount || !price) {
+//     return res.status(400).json({ message: "Missing required fields." });
+//   }
+
+//   const connection = await sqlPool.getConnection();
+
+//   // ---- Format date dd/mm/yy ----
+//   const now = new Date();
+//   const historyDate = `${String(now.getDate()).padStart(2, "0")}/${String(
+//     now.getMonth() + 1
+//   ).padStart(2, "0")}/${String(now.getFullYear()).slice(-2)}`;
+
+//   try {
+//     await connection.beginTransaction();
+
+//     // ---- 1) Read item ----
+//     const [[dbItem]] = await connection.query(
+//       "SELECT * FROM webshop WHERE guid = ? AND itemid = ?",
+//       [Number(guid), Number(itemId)]
+//     );
+//     if (!dbItem) throw new Error("Item not found.");
+
+//     // ---- 2) Receiver lookup ----
+//     const [[receiver]] = await connection.query(
+//       "SELECT EntityLowId, AccountId, Name FROM characterrecord WHERE Name = ?",
+//       [receiverName]
+//     );
+//     if (!receiver) throw new Error("Receiver not found.");
+
+//     // ---- 3) Owner validation ----
+//     if (Number(AccountId) !== Number(receiver.AccountId)) {
+//       return res.status(400).json({ message: "You are buying for the wrong character." });
+//     }
+
+//     // ---- 4) Validate item data ----
+//     if (
+//       Number(dbItem.itemid) !== Number(itemId) ||
+//       dbItem.name !== itemName ||
+//       Number(dbItem.price) !== Number(price) ||
+//       Number(dbItem.amount) !== Number(amount)
+//     ) {
+//       return res.status(400).json({ message: "Item data mismatch." });
+//     }
+
+//     // ---- 5) Get points ----
+//     const [[accountPoints]] = await connection.query(
+//       "SELECT Points FROM account WHERE AccountId = ? FOR UPDATE",
+//       [receiver.AccountId]
+//     );
+//     if (!accountPoints) throw new Error("Account points not found.");
+
+//     if (Number(accountPoints.Points) !== Number(points)) {
+//       return res.status(400).json({ message: "Points mismatch." });
+//     }
+
+//     const newPoints = Number(accountPoints.Points) - Number(dbItem.price);
+//     if (newPoints < 0) {
+//       return res.status(400).json({ message: "Not enough points." });
+//     }
+
+//     // ---- 6) Update points ----
+//     await connection.query(
+//       "UPDATE account SET Points = ? WHERE AccountId = ?",
+//       [newPoints, receiver.AccountId]
+//     );
+
+//     // ---- 7) Queue item ----
+//     await connection.query(
+//       `INSERT INTO asda2donationitem
+//        (ItemId, Amount, RecieverId, Creator, IsSoulBound, Recived, Created)
+//        VALUES (?, ?, ?, '~WebShop System~', 0, 0, NOW())`,
+//       [dbItem.itemid, dbItem.amount, receiver.EntityLowId]
+//     );
+
+//     // ---- 8) Purchase history ----
+//     await connection.query(
+//       `INSERT INTO webshoprecord
+//        (AccId, AccName, CharId, CharName, ItemId, ItemName, Amount, History, Price, Img)
+//        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//       [
+//         receiver.AccountId,
+//         Name,
+//         receiver.EntityLowId,
+//         receiver.Name,
+//         dbItem.itemid,
+//         dbItem.name,
+//         dbItem.amount,
+//         historyDate,
+//         dbItem.price,
+//         dbItem.item_img,
+//       ]
+//     );
+
+//     // ---- 9) VIP logic (SAFE) ----
+//     const [[accountInfo]] = await connection.query(
+//       "SELECT UsedPoints, VipLevel FROM account WHERE AccountId = ? FOR UPDATE",
+//       [receiver.AccountId]
+//     );
+
+//     let newVipLevel = accountInfo.VipLevel;
+
+//     if (Number(dbItem.category) !== 9) {
+//       const updatedUsedPoints =
+//         Number(accountInfo.UsedPoints || 0) + Number(dbItem.price);
+
+//       await connection.query(
+//         "UPDATE account SET UsedPoints = ? WHERE AccountId = ?",
+//         [updatedUsedPoints, receiver.AccountId]
+//       );
+
+//       const [[vip]] = await connection.query(
+//         `SELECT VipLevel
+//          FROM VipLevels
+//          WHERE TargetPoints <= ?
+//          ORDER BY TargetPoints DESC
+//          LIMIT 1`,
+//         [updatedUsedPoints]
+//       );
+
+//       if (vip && vip.VipLevel > accountInfo.VipLevel) {
+//         await connection.query(
+//           "UPDATE account SET VipLevel = ? WHERE AccountId = ?",
+//           [vip.VipLevel, receiver.AccountId]
+//         );
+//         newVipLevel = vip.VipLevel;
+//       }
+//     }
+
+//     await connection.commit();
+
+//     return res.status(200).json({
+//       message: "Purchase successful.",
+//       newPoints,
+//       newVipLevel,
+//     });
+
+//   } catch (error) {
+//     await connection.rollback();
+//     console.error("Purchase failed:", error);
+//     return res.status(500).json({ message: "Internal server error." });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
 export const buyItem = async (req, res) => {
   const { receiverName, guid } = req.params;
-  const { AccountId, Name, itemId, itemName, amount, price, points } = req.body;
+  const {AccountId, Name } = req.user
+  const {itemId, itemName, amount, price } = req.body;
 
-  if (!guid || !receiverName || !AccountId || !Name || !itemId || !itemName || !amount || !price) {
+  // Basic validation BEFORE taking a connection / starting a transaction
+  if (
+    !guid || !receiverName || !AccountId || !Name ||
+    !itemId || !itemName || !amount || !price
+  ) {
     return res.status(400).json({ message: "Missing required fields." });
   }
 
@@ -218,6 +410,13 @@ export const buyItem = async (req, res) => {
     now.getMonth() + 1
   ).padStart(2, "0")}/${String(now.getFullYear()).slice(-2)}`;
 
+  // Helper: fail inside transaction without leaking locks
+  const fail = (status, message) => {
+    const err = new Error(message);
+    err.httpStatus = status;
+    throw err;
+  };
+
   try {
     await connection.beginTransaction();
 
@@ -226,53 +425,50 @@ export const buyItem = async (req, res) => {
       "SELECT * FROM webshop WHERE guid = ? AND itemid = ?",
       [Number(guid), Number(itemId)]
     );
-    if (!dbItem) throw new Error("Item not found.");
+    if (!dbItem) fail(404, "Item not found.");
 
     // ---- 2) Receiver lookup ----
     const [[receiver]] = await connection.query(
       "SELECT EntityLowId, AccountId, Name FROM characterrecord WHERE Name = ?",
       [receiverName]
     );
-    if (!receiver) throw new Error("Receiver not found.");
+    if (!receiver) fail(404, "Receiver not found.");
 
     // ---- 3) Owner validation ----
     if (Number(AccountId) !== Number(receiver.AccountId)) {
-      return res.status(400).json({ message: "You are buying for the wrong character." });
+      fail(400, "You are buying for the wrong character.");
     }
 
-    // ---- 4) Validate item data ----
+    // ---- 4) Validate item data (server-side) ----
     if (
       Number(dbItem.itemid) !== Number(itemId) ||
       dbItem.name !== itemName ||
       Number(dbItem.price) !== Number(price) ||
       Number(dbItem.amount) !== Number(amount)
     ) {
-      return res.status(400).json({ message: "Item data mismatch." });
+      fail(400, "Item data mismatch.");
     }
 
-    // ---- 5) Get points ----
-    const [[accountPoints]] = await connection.query(
-      "SELECT Points FROM account WHERE AccountId = ? FOR UPDATE",
+    // ---- 5) Spend points atomically (NO FOR UPDATE needed) ----
+    const itemPrice = Number(dbItem.price);
+
+    const [spendResult] = await connection.query(
+      "UPDATE account SET Points = Points - ? WHERE AccountId = ? AND Points >= ?",
+      [itemPrice, receiver.AccountId, itemPrice]
+    );
+
+    if (spendResult.affectedRows === 0) {
+      fail(400, "Not enough points.");
+    }
+
+    // Read new points for response (optional)
+    const [[pointsRow]] = await connection.query(
+      "SELECT Points FROM account WHERE AccountId = ?",
       [receiver.AccountId]
     );
-    if (!accountPoints) throw new Error("Account points not found.");
+    const newPoints = Number(pointsRow?.Points ?? 0);
 
-    if (Number(accountPoints.Points) !== Number(points)) {
-      return res.status(400).json({ message: "Points mismatch." });
-    }
-
-    const newPoints = Number(accountPoints.Points) - Number(dbItem.price);
-    if (newPoints < 0) {
-      return res.status(400).json({ message: "Not enough points." });
-    }
-
-    // ---- 6) Update points ----
-    await connection.query(
-      "UPDATE account SET Points = ? WHERE AccountId = ?",
-      [newPoints, receiver.AccountId]
-    );
-
-    // ---- 7) Queue item ----
+    // ---- 6) Queue item ----
     await connection.query(
       `INSERT INTO asda2donationitem
        (ItemId, Amount, RecieverId, Creator, IsSoulBound, Recived, Created)
@@ -280,7 +476,7 @@ export const buyItem = async (req, res) => {
       [dbItem.itemid, dbItem.amount, receiver.EntityLowId]
     );
 
-    // ---- 8) Purchase history ----
+    // ---- 7) Purchase history ----
     await connection.query(
       `INSERT INTO webshoprecord
        (AccId, AccName, CharId, CharName, ItemId, ItemName, Amount, History, Price, Img)
@@ -299,22 +495,24 @@ export const buyItem = async (req, res) => {
       ]
     );
 
-    // ---- 9) VIP logic (SAFE) ----
-    const [[accountInfo]] = await connection.query(
-      "SELECT UsedPoints, VipLevel FROM account WHERE AccountId = ? FOR UPDATE",
-      [receiver.AccountId]
-    );
-
-    let newVipLevel = accountInfo.VipLevel;
+    // ---- 8) VIP logic (no FOR UPDATE needed; do atomic increment) ----
+    let newVipLevel = null;
 
     if (Number(dbItem.category) !== 9) {
-      const updatedUsedPoints =
-        Number(accountInfo.UsedPoints || 0) + Number(dbItem.price);
-
+      // Increment UsedPoints atomically
       await connection.query(
-        "UPDATE account SET UsedPoints = ? WHERE AccountId = ?",
-        [updatedUsedPoints, receiver.AccountId]
+        "UPDATE account SET UsedPoints = UsedPoints + ? WHERE AccountId = ?",
+        [itemPrice, receiver.AccountId]
       );
+
+      // Get current UsedPoints + VipLevel
+      const [[accInfo]] = await connection.query(
+        "SELECT UsedPoints, VipLevel FROM account WHERE AccountId = ?",
+        [receiver.AccountId]
+      );
+
+      const usedPoints = Number(accInfo?.UsedPoints ?? 0);
+      const currentVipLevel = Number(accInfo?.VipLevel ?? 0);
 
       const [[vip]] = await connection.query(
         `SELECT VipLevel
@@ -322,16 +520,25 @@ export const buyItem = async (req, res) => {
          WHERE TargetPoints <= ?
          ORDER BY TargetPoints DESC
          LIMIT 1`,
-        [updatedUsedPoints]
+        [usedPoints]
       );
 
-      if (vip && vip.VipLevel > accountInfo.VipLevel) {
+      if (vip && Number(vip.VipLevel) > currentVipLevel) {
         await connection.query(
           "UPDATE account SET VipLevel = ? WHERE AccountId = ?",
           [vip.VipLevel, receiver.AccountId]
         );
-        newVipLevel = vip.VipLevel;
+        newVipLevel = Number(vip.VipLevel);
+      } else {
+        newVipLevel = currentVipLevel;
       }
+    } else {
+      // Category 9: just return current VipLevel
+      const [[accInfo]] = await connection.query(
+        "SELECT VipLevel FROM account WHERE AccountId = ?",
+        [receiver.AccountId]
+      );
+      newVipLevel = Number(accInfo?.VipLevel ?? 0);
     }
 
     await connection.commit();
@@ -341,12 +548,25 @@ export const buyItem = async (req, res) => {
       newPoints,
       newVipLevel,
     });
-
   } catch (error) {
-    await connection.rollback();
+    try {
+      await connection.rollback();
+    } catch {
+      // ignore rollback errors
+    }
+
+    const status = error.httpStatus || 500;
+    const message = status === 500 ? "Internal server error." : error.message;
+
     console.error("Purchase failed:", error);
-    return res.status(500).json({ message: "Internal server error." });
+    return res.status(status).json({ message });
   } finally {
+    // Extra safety: if someone adds a new early return later, this prevents transaction leaks
+    try {
+      await connection.rollback();
+    } catch {
+      // ignore
+    }
     connection.release();
   }
 };
@@ -361,6 +581,25 @@ export const deleteItem = async (req, res) => {
   }
 
   try {
+    const { AccountId } = req.user;
+  
+    const [sqlResult] = await sqlPool.query(
+      `SELECT Name, AccountId, RoleGroupName
+       FROM account
+       WHERE AccountId = ?`,
+      [AccountId]
+    );
+  
+    if (!sqlResult.length) {
+      return res.status(403).json({ message: "User not found" });
+    }
+  
+    const user = sqlResult[0];
+  
+    // console.log(user)
+    if(user.RoleGroupName !== "Owner" || user.Name !== "gmfirst"){
+      return res.status(403).json({ message: "Invalid User Role Or Admin" });
+    }
     const [result] = await sqlPool.query(
       'DELETE FROM webshop WHERE guid = ?',
       [guid]

@@ -3,6 +3,7 @@ import { useLocation , useNavigate } from "react-router-dom";
 import axios from 'axios';
 import { UserContext } from '../context/userContext.jsx'
 import { useToast } from "../context/ToastContext";
+import { Turnstile } from '@marsidev/react-turnstile';
 
 
 
@@ -14,6 +15,7 @@ const Auth = () => {
   const [error,setError] =useState('')
   const {setCurrentUser} = useContext(UserContext)
   const { showToast } = useToast();
+  const [turnstileToken, setTurnstileToken] = useState(null);
 
 
   useEffect(() => {
@@ -38,7 +40,10 @@ const Auth = () => {
     e.preventDefault();
     setError('');
     try {
-      const res = await axios.post("http://localhost:3000/auth/register", registerData );
+      const res = await axios.post("http://localhost:3000/auth/register", {
+        ...registerData,
+        turnstileToken
+      });
       if (res.status === 201 || res.status === 200) {
         setRegisterData({
           username: "",
@@ -59,7 +64,10 @@ const Auth = () => {
     e.preventDefault();
     setError('');
     try {
-      const res = await axios.post("http://localhost:3000/auth/login", loginData);
+      const res = await axios.post("http://localhost:3000/auth/login", {
+        ...loginData,
+        turnstileToken
+      });
       const user = await res.data.user;
       if (res.status === 201 || res.status === 200) {
         setCurrentUser(user)
@@ -67,9 +75,22 @@ const Auth = () => {
           username: "",
           password: "",
         });
-        if(user.role === "Owner"){
-          navigate("/admin");
-        }else{
+        try {
+          const adminRes = await axios.get(
+            "http://localhost:3000/auth/type",
+            {
+              withCredentials: true,
+              headers: { Authorization: `Bearer ${user.token}` },
+            }
+          );
+
+          if (user.token === adminRes.data.token && !adminRes.data.normalUser) {
+            navigate("/admin");
+          } else {
+            navigate("/");
+          }
+
+        } catch (adminError) {
           navigate("/");
         }
       }
@@ -128,6 +149,13 @@ const Auth = () => {
                 />
               </div>
 
+              <Turnstile
+                siteKey="0x4AAAAAACnX6qYXaGIANzDN"
+                onSuccess={(token) => setTurnstileToken(token)}
+                onExpire={() => setTurnstileToken(null)}
+                options={{ theme: 'dark' }}
+              />
+
               <button
                 onClick={handleLogin}
                 type="submit"
@@ -135,6 +163,9 @@ const Auth = () => {
               >
                 Login
               </button>
+              <div className="mt-3 text-sm text-blue-500 flex flex-col items-center gap-2">
+                <p>Make Sure That Your Account Is Activated</p>
+              </div>
             </form>
           )}
 
@@ -190,6 +221,13 @@ const Auth = () => {
                 />
               </div>
 
+              <Turnstile
+                siteKey="0x4AAAAAACnX6qYXaGIANzDN"
+                onSuccess={(token) => setTurnstileToken(token)}
+                onExpire={() => setTurnstileToken(null)}
+                options={{ theme: 'dark' }}
+              />
+
               <button
                 onClick={handleRegister}
                 type="submit"
@@ -197,6 +235,9 @@ const Auth = () => {
               >
                 Register
               </button>
+              <div className="mt-3 text-sm text-red-500 flex flex-col items-center gap-2">
+                <p>Activation May Take 1 To 5 Mins</p>
+              </div>
             </form>
           )}
 

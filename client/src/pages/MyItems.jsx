@@ -20,11 +20,12 @@ const MyItems = () => {
 
   useEffect(() => {
     const fetchCharMail = async () => {
-      if (!currentUser?.AccountId) return;
+      if (!currentUser?.token) return;
 
       try {
-        const response = await axios.get(`http://localhost:3000/player/items/${currentUser.AccountId}`,
+        const response = await axios.get(`http://localhost:3000/player/items/`,
         {withCredentials: true , headers:{Authorization: `Bearer ${token}`}});
+        console.log(response.data)
         setItemsData(response.data); 
       } catch (err) {
         console.error("Error fetching player items:", err);

@@ -4,6 +4,9 @@ import { useState ,useContext} from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { UserContext } from '../context/userContext'
 import { useToast } from "../context/ToastContext";
+import { useEffect } from 'react'
+import axios from 'axios';
+
 
 
 
@@ -15,9 +18,26 @@ const Navbar = () => {
     const {setCurrentUser} = useContext(UserContext)
     const {currentUser} = useContext(UserContext)
     const token = currentUser?.token;
+    const [thisUser , setThisUser] = useState({})
+
+    useEffect(()=>{
+      if (!currentUser?.token) return;
+      const getUserData =async () =>{
+        try {
+            const response = await axios.get(`http://localhost:3000/auth/user`,
+            {withCredentials: true , headers:{Authorization: `Bearer ${token}`}})
+            setThisUser(response.data)
+            // console.log(response.data)
+        } catch (err) {
+          console.log(err)
+        }
+      }
+      getUserData()
+    },[token])
   
     const handleLogout = () => {
       setCurrentUser(null)
+      setThisUser({})
       navigate('/')
     }
 
@@ -27,7 +47,7 @@ const Navbar = () => {
       bg-white/10 backdrop-blur border-b border-white/20 shadow-md'>
         
       <Link to='/' className='max-md:flex-1'>
-        <img src="../public/AsdaLogo.png" alt="Logo" className='w-16 h-auto' />
+        <img src="../AsdaLogo.png" alt="Logo" className='w-16 h-auto' />
       </Link>
 
       <div className={`max-md:absolute max-md:top-0 max-md:left-0 max-md:font-medium
@@ -65,7 +85,7 @@ const Navbar = () => {
               onClick={() => navigate(`/profile`)}
             >
               <UserIcon className="w-5 h-5 text-green-400" />
-              <p className="text-white text-sm">{currentUser.name}</p>
+              <p className="text-white text-sm">{thisUser.Name}</p>
               <Wallet2Icon className="w-5 h-5 text-blue-400" />
               <p className="text-white text-sm">Balance: {currentUser.points}</p>
             </div>

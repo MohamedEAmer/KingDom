@@ -15,12 +15,12 @@ const GameDetails = () => {
       </p>
 
       {/* Download Links */}
-      <div className="flex flex-col md:flex-row gap-6 mb-8 w-full max-w-xl">
+      <div className="flex flex-col md:flex-row flex-wrap gap-6 mb-8 w-full max-w-4xl justify-center">
         <a
           href="https://mega.nz/file/6m4UyQxB#fvqFWkhvUA9Mso-N0fE7idmT5tIYRYC1yjr2eyYRonU"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 px-6 py-4 bg-red-600 hover:bg-red-700 rounded-lg shadow-lg text-center font-semibold transition-transform transform hover:scale-105"
+          className="flex-1 min-w-[220px] px-6 py-4 bg-red-600 hover:bg-red-700 rounded-lg shadow-lg text-center font-semibold transition-transform transform hover:scale-105"
         >
           💾 Download via MEGA
         </a>
@@ -29,9 +29,27 @@ const GameDetails = () => {
           href="https://www.mediafire.com/file/4x0r9ea9rcp5wco/KingDomOfSecret-EvoL.rar/file"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg shadow-lg text-center font-semibold transition-transform transform hover:scale-105"
+          className="flex-1 min-w-[220px] px-6 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg shadow-lg text-center font-semibold transition-transform transform hover:scale-105"
         >
           📦 Download via MediaFire
+        </a>
+
+        <a
+          href="https://www.transfernow.net/dl/20260621AmBekNMt"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 min-w-[220px] px-6 py-4 bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-lg text-center font-semibold transition-transform transform hover:scale-105"
+        >
+          📦 Download via TransFare Now
+        </a>
+
+        <a
+          href="https://drive.google.com/file/d/1bZ9uFs-toqAMBikpJNCNKuVQ7SnXzj-n/view?usp=sharing"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 min-w-[220px] px-6 py-4 bg-green-600 hover:bg-green-700 rounded-lg shadow-lg text-center font-semibold transition-transform transform hover:scale-105"
+        >
+          📦 Download via Google Drive
         </a>
       </div>
       {/* Description - 2 */}

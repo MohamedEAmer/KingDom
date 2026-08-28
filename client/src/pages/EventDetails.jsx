@@ -50,10 +50,13 @@ const EventDetails = () => {
           <img
             src={`../${selectedPart.img}`}
             alt="Selected Preview"
-            className="w-full max-w-xl my-8 rounded-lg shadow-xl object-cover mb-6"
+            className="w-full max-w-xl my-8 border border-gray-600 rounded-xl shadow-xl object-cover mb-6"
           />
           <p className="my-4 max-w-2xl text-center text-gray-400 text-lg">
-            {selectedPart.text}
+            {selectedPart.text.ar}
+          </p>
+          <p className="my-4 max-w-2xl text-center text-gray-400 text-lg">
+            {selectedPart.text.en}
           </p>
         </>
       )}

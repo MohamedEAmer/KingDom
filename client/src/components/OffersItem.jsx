@@ -28,7 +28,8 @@ const OffersItem = ({ item , setError }) => {
 
       const getPlayerData = async () =>{
         try {
-            const response = await axios.get(`http://localhost:3000/player/${currentUser.AccountId}`)
+            const response = await axios.get(`http://localhost:3000/player/`,
+            {withCredentials: true , headers:{Authorization: `Bearer ${token}`}})
               setAccountData(response.data.characters)
 
         } catch (err) {
@@ -50,20 +51,20 @@ const OffersItem = ({ item , setError }) => {
     e.preventDefault();
     const buyData = new FormData();
 
-    console.log(currentUser,selectedItem)
-    buyData.set('AccountId',currentUser.AccountId)
-    buyData.set('Name',currentUser.name)
-    buyData.set('points',currentUser.points)
+    // console.log(currentUser,selectedItem)
+    // buyData.set('AccountId',currentUser.AccountId)
+    // buyData.set('Name',currentUser.name)
+    // buyData.set('points',currentUser.points)
     buyData.set('amount',selectedItem.amount)
     buyData.set('price',selectedItem.price)
     buyData.set('itemName',selectedItem.name)
     buyData.set('itemId',selectedItem.itemid)
     try {
-      const buyResponse = await axios.post(`http://localhost:3000/shop/buy/${selectedOption}/${selectedItem.guid}`,buyData);
+      const buyResponse = await axios.post(`http://localhost:3000/shop/buy/${selectedOption}/${selectedItem.guid}`,buyData,
+      {withCredentials: true , headers:{Authorization: `Bearer ${token}`}});
       showToast(buyResponse.data.message, "success");
       setCurrentUser(prev => ({
         ...prev,
-        VipLevel: buyResponse.data.newVipLevel,
         points: buyResponse.data.newPoints
       }));
     } catch (err) {

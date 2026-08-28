@@ -17,6 +17,7 @@ const Profile = () => {
   const [confirmPass, setConfirmPass] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [thisUser, setThisUser] = useState({});
   const {currentUser} = useContext(UserContext)
   const token = currentUser?.token;
   const navigate = useNavigate()
@@ -30,18 +31,46 @@ const Profile = () => {
     }
   }, [])
 
-  useEffect(()=>{
-    const getPlayerData =async () =>{
+  // useEffect(()=>{
+  //   const getPlayerData =async () =>{
+  //     try {
+  //         const response = await axios.get(`http://localhost:3000/player/`,
+  //         {withCredentials: true , headers:{Authorization: `Bearer ${token}`}})
+  //         setAccountData(response.data.characters)
+  //     } catch (err) {
+  //       console.log(err)
+  //     }
+  //   }
+  //   getPlayerData()
+  // },[])
+
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-          const response = await axios.get(`http://localhost:3000/player/${currentUser?.AccountId}`,
-          {withCredentials: true , headers:{Authorization: `Bearer ${token}`}})
-          setAccountData(response.data.characters)
+        const [userResponse, playerResponse] = await Promise.all([
+          axios.get("http://localhost:3000/auth/user", {
+            withCredentials: true,
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get("http://localhost:3000/player/", {
+            withCredentials: true,
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+
+        setThisUser(userResponse.data);
+        setAccountData(playerResponse.data.characters);
+  
       } catch (err) {
-        console.log(err)
+        console.log(err);
       }
+    };
+  
+    if (token) {
+      fetchData();
     }
-    getPlayerData()
-  },[])
+  }, [token]);
+  
 
   const openDialog = () => {
     dialogRef.current?.showModal();
@@ -68,8 +97,9 @@ const Profile = () => {
     setLoading(true);
   
     try {
-      const changePassRes = await axios.put(`http://localhost:3000/auth/changePassword/${currentUser?.AccountId}`, changePass ,
+      const changePassRes = await axios.put(`http://localhost:3000/auth/changePassword/`, changePass ,
       {withCredentials: true , headers:{Authorization: `Bearer ${token}`}});
+      // console.log(changePass)
       if(changePassRes.status == 200){
       setSuccess(true);
       setError('')
@@ -90,18 +120,18 @@ const Profile = () => {
         <div className="space-y-2">
           <div className="flex flex-col sm:flex-row justify-between border-b border-gray-700 py-2">
             <span className="text-gray-400">Email:</span>
-            <span className="text-right sm:text-left break-all">{currentUser?.email}</span>
+            <span className="text-right sm:text-left break-all">{thisUser?.EmailAddress}</span>
           </div>
           <div className="flex flex-col sm:flex-row justify-between border-b border-gray-700 py-2">
             <span className="text-gray-400">Username:</span>
-            <span className="text-right sm:text-left">{currentUser?.name}</span>
+            <span className="text-right sm:text-left">{thisUser?.Name}</span>
           </div>
           <div className="flex flex-col sm:flex-row justify-between border-b border-gray-700 py-2">
             <span className="text-gray-400">VIPLevel:</span>
-            <span className="text-right sm:text-left">{currentUser?.VipLevel}</span>
+            <span className="text-right sm:text-left">{thisUser?.VipLevel}</span>
           </div>
           {/* Road to Next VIP */}
-          {currentUser?.VipLevel < 20 ? (
+          {thisUser?.VipLevel < 20 ? (
           <div className="flex flex-col gap-1 py-2 border-b border-gray-700">
             <span className="text-gray-400 text-sm">Progress to next{" "}<span className="text-yellow-400 cursor-pointer hover:underline" onClick={() => navigate("/VipInfo")}>
                 VIP
@@ -113,7 +143,7 @@ const Profile = () => {
                   className="bg-yellow-500 h-4"
                   style={{
                     width: `${Math.min(
-                      (currentUser?.UsedPoints / currentUser?.NextVipTarget ) * 100,
+                      (thisUser?.UsedPoints / thisUser?.NextVipTarget ) * 100,
                       100
                     )}%`
                   }}
@@ -121,7 +151,7 @@ const Profile = () => {
               </div>
               
               <span className="text-gray-300 text-xs mt-1">
-                {currentUser?.UsedPoints} / {currentUser?.NextVipTarget} Points
+                {thisUser?.UsedPoints} / {thisUser?.NextVipTarget} Points
               </span>
           </div>) : (
           <div className="flex flex-col gap-1 py-2 border-b border-gray-700">
@@ -143,7 +173,7 @@ const Profile = () => {
               </div>
               
               <span className="text-gray-300 text-xs mt-1">
-                {currentUser?.UsedPoints} Points
+                {thisUser?.UsedPoints} Points
               </span>
           </div>
           )}
@@ -152,7 +182,7 @@ const Profile = () => {
               <span className="flex items-center gap-1">
                 Balance <WalletIcon className="w-4" />:
               </span>
-              <span className="text-white">{currentUser?.points} Points</span>
+              <span className="text-white">{thisUser?.Points} Points</span>
             </div>
 
             <Link

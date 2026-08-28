@@ -10,30 +10,70 @@ const ItemCard = ({ item, setError }) => {
   const [selectedOption, setSelectedOption] = useState('');
   const [accountData, setAccountData] = useState([]);
   const dialogRef = useRef(null);
-
+  // const [thisUser, setThisUser] = useState({});
   const { currentUser, setCurrentUser } = useContext(UserContext);
   const token = currentUser?.token;
   const { showToast } = useToast();
+
+  // const openDialog = async () => {
+  //   if (!token) {
+  //     setError("You can't buy items, please login first.");
+  //     return;
+  //   }
+
+  //   try {
+  //     const res = await axios.get(`http://localhost:3000/player/`,
+  //     {withCredentials: true , headers:{Authorization: `Bearer ${token}`}});
+  //     const res2 = await axios.get(`http://localhost:3000/auth/user`,
+  //     {withCredentials: true , headers:{Authorization: `Bearer ${token}`}});
+  //     setAccountData(res.data.characters || []);
+  //   } catch (err) {
+  //     console.error(err);
+  //     setError("Failed to fetch characters.");
+  //   }
+
+  //   setSelectedItem(item);
+  //   setSelectedOption('');
+  //   dialogRef.current?.showModal();
+  // };
 
   const openDialog = async () => {
     if (!token) {
       setError("You can't buy items, please login first.");
       return;
     }
-
+  
     try {
-      const res = await axios.get(`http://localhost:3000/player/${currentUser.AccountId}`);
-      setAccountData(res.data.characters || []);
+      // Fetch both player and user data in parallel
+      const [resPlayer] = await Promise.all([
+        axios.get("http://localhost:3000/player/", {
+          withCredentials: true,
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        // axios.get("http://localhost:3000/auth/user", {
+        //   withCredentials: true,
+        //   headers: { Authorization: `Bearer ${token}` }
+        // })
+      ]);
+
+  
+      // console.log(resUser.data);
+  
+      // Update state
+      setAccountData(resPlayer.data.characters || []);
+      // setThisUser(resUser.data);
+  
     } catch (err) {
       console.error(err);
       setError("Failed to fetch characters.");
     }
-
+  
+    // Open dialog
     setSelectedItem(item);
     setSelectedOption('');
     dialogRef.current?.showModal();
   };
-
+  
   const closeModal = () => dialogRef.current?.close();
 
   const confirmPurchase = async (e) => {
@@ -41,9 +81,9 @@ const ItemCard = ({ item, setError }) => {
     if (!selectedOption) return;
 
     const buyData = new FormData();
-    buyData.set('AccountId', currentUser.AccountId);
-    buyData.set('Name', currentUser.name);
-    buyData.set('points', currentUser.points);
+    // buyData.set('AccountId', currentUser.AccountId);
+    // buyData.set('Name', currentUser.name);
+    // buyData.set('points', currentUser.points);
     buyData.set('amount', selectedItem.amount);
     buyData.set('price', selectedItem.price);
     buyData.set('itemName', selectedItem.name);
@@ -52,12 +92,14 @@ const ItemCard = ({ item, setError }) => {
     try {
       const buyResponse = await axios.post(
         `http://localhost:3000/shop/buy/${selectedOption}/${selectedItem.guid}`,
-        buyData
+        buyData,
+        {withCredentials: true , headers:{Authorization: `Bearer ${token}`}}
       );
       showToast(buyResponse.data.message, "success");
+      console.log(buyResponse.data)
       setCurrentUser(prev => ({
         ...prev,
-        VipLevel: buyResponse.data.newVipLevel,
+        // VipLevel: buyResponse.data.newVipLevel,
         points: buyResponse.data.newPoints
       }));
     } catch (err) {

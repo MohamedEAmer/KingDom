@@ -16,7 +16,7 @@ const AboutGameSection = () => {
           <div className='relative mt-6 flex justify-center cursor-pointer'>
             <img onClick={()=>{navigate('/events');
             scrollTo(0, 0);}}
-              src={`../../public/${currentPic.image}`}
+              src={`../${currentPic.image}`}
               alt="News preview"
               className="w-full max-w-[960px]  object-contain rounded-xl shadow-md"
             />
@@ -25,8 +25,11 @@ const AboutGameSection = () => {
             {currentPic.title}
           </h2>
       
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6 mt-8 max-w-5xl mx-auto px-2 sm:px-0">
-            {dummyGamePics.map((Pic , index) => (
+          <div
+            className="grid gap-4 md:gap-6 mt-8 max-w-5xl mx-auto px-2 sm:px-0
+            [grid-template-columns:repeat(auto-fit,minmax(140px,1fr))]"
+          >
+            {dummyGamePics.map((Pic, index) => (
               <div
                 key={index}
                 className="relative group hover:-translate-y-1 transition duration-300 cursor-pointer rounded-lg overflow-hidden"
@@ -37,11 +40,6 @@ const AboutGameSection = () => {
                   alt="trailer"
                   className="w-full h-full object-cover brightness-75"
                 />
-                {/* {/* <PlayCircleIcon
-                  strokeWidth={1.6}
-                  className="absolute top-1/2 left-1/2 w-6 h-6 md:w-8 md:h-8 transform -translate-x-1/2 -translate-y-1/2 text-white"
-                /> 
-                if there is a video we will render this */}
               </div>
             ))}
           </div>

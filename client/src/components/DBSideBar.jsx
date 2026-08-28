@@ -40,7 +40,7 @@ import {
   
           {/* Game Logo */}
           <div className="mb-8 text-center">
-            <img onClick={()=>navigate('/')} src="../../public/AsdaLogo.png" alt="Logo" className="w-24 h-24 cursor-pointer mx-auto" />
+            <img onClick={()=>navigate('/')} src="../AsdaLogo.png" alt="Logo" className="w-24 h-24 cursor-pointer mx-auto" />
           </div>
   
           {/* Tabs */}

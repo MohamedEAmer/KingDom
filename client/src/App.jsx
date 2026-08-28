@@ -21,6 +21,8 @@ import Profile from './pages/Profile'
 import ProfileDetails from './pages/ProfileDetails'
 import MyItems from './pages/MyItems'
 import MyMail from './pages/MyMail'
+import Missions from './pages/Missions'
+import Royals from './pages/Royals'
 import VipInfo from './pages/VipInfo'
 import NotFound from './pages/NotFound'
 import {Toaster} from 'react-hot-toast'
@@ -56,6 +58,8 @@ const App = () => {
         <Route path='/profile/details' element={<ProfileDetails/>}/>
         <Route path='/myItems' element={<MyItems/>}/>
         <Route path='/myMail' element={<MyMail/>}/>
+        <Route path='/myMissions' element={<Missions/>}/>
+        <Route path='/royals' element={<Royals/>}/>
         <Route path='/vipInfo' element={<VipInfo/>}/>
         <Route path='/support' element={<Support/>}/>
         <Route path='/activate-account/:token' element={<ActivateAccount/>}/>

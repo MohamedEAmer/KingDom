@@ -13,6 +13,8 @@ const authMiddleware = async (req, res, next) => {
       }
 
       req.user = info;
+      // console.log(req.user)
+      // console.log(info)
       next();
     });
   } else {

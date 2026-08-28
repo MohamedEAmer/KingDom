@@ -10,7 +10,7 @@ const Footer = () => {
 
         {/* Left – Logo & Description */}
         <div className="max-w-xl">
-          <img src="/AsdaLogo.png" alt="Asda 2 EvoL Logo" className="h-16 mb-3" />
+          <img src="/GameName1.png" alt="Asda 2 EvoL Logo" className="h-16 mb-3" />
 
           <p className="text-sm sm:text-base leading-relaxed text-justify">
             <span className="font-bold text-yellow-400">

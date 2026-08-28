@@ -5,10 +5,27 @@ import { sendActivationEmail } from "../middleware/emailMiddleware.js";
 
 import { HttpError } from '../Models/errorModel.js';
 
+const verifyTurnstile = async (token) => {
+  const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      secret: process.env.TURNSTILE_SECRET_KEY,
+      response: token,
+    }),
+  });
+  const data = await res.json();
+  return data.success;
+};
+
 
 export const loginUser = async (req, res , next) => {
-  const { username, password } = req.body;
+  const { username, password, turnstileToken } = req.body;
   try {
+    const isHuman = await verifyTurnstile(turnstileToken);
+    if (!isHuman) {
+      return res.status(403).json({ message: 'Bot verification failed. Please refresh and try again.' });
+    }
     const [sqlResult] = await sqlPool.query(
       'SELECT * FROM account WHERE Name = ? AND BINARY Password = ?',
       [username, password]
@@ -16,32 +33,32 @@ export const loginUser = async (req, res , next) => {
     if (!sqlResult||sqlResult.length === 0) {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
-    console.log(sqlResult[0].IsActive)
+    // console.log(sqlResult[0].IsActive)
     if(sqlResult[0].IsActive !== 1){
       return res.status(401).json({ message: ' BANNED OR Not ACTIVATED Yet Please Check Your E-Mail' });
     }
 
     const user = sqlResult[0];
-    const { AccountId, Name, EmailAddress, RoleGroupName, IsActive ,IsBeta ,Points ,VipLevel ,UsedPoints} = user;
+    const { AccountId, Name, RoleGroupName , Points} = user;
 
-    const [nextVipTarget] = await sqlPool.query(
-      'SELECT TargetPoints FROM viplevels WHERE VipLevel = ?',
-      [VipLevel < 20 ? (VipLevel + 1) : VipLevel]
-    );
+    // const [nextVipTarget] = await sqlPool.query(
+    //   'SELECT TargetPoints FROM viplevels WHERE VipLevel = ?',
+    //   [VipLevel < 20 ? (VipLevel + 1) : VipLevel]
+    // );
 
     const token = jwt.sign({AccountId, Name, RoleGroupName}, process.env.JWT_SECRET,{expiresIn:"1d"})
     res.status(200).json({
       message: 'Login successful',
       user: {
-        AccountId,
-        name: Name,
-        email: EmailAddress,
-        role: RoleGroupName,
-        isActive: IsActive,
-        isBeta:IsBeta,
-        VipLevel:VipLevel,
-        NextVipTarget:nextVipTarget[0]?.TargetPoints,
-        UsedPoints:UsedPoints,
+        // AccountId,
+        // name: Name,
+        // email: EmailAddress,
+        // role: RoleGroupName,
+        // isActive: IsActive,
+        // isBeta:IsBeta,
+        // VipLevel:VipLevel,
+        // NextVipTarget:nextVipTarget[0]?.TargetPoints,
+        // UsedPoints:UsedPoints,
         points:Points,
         token: token,
       },
@@ -52,7 +69,12 @@ export const loginUser = async (req, res , next) => {
 };
 
 export const registerUser = async (req, res) => {
-  const { username, email, password, confirmPassword } = req.body;
+  const { username, email, password, confirmPassword, turnstileToken } = req.body;
+
+  const isHuman = await verifyTurnstile(turnstileToken);
+  if (!isHuman) {
+    return res.status(403).json({ message: 'Bot verification failed. Please refresh and try again.' });
+  }
 
   /* ---------------- BASIC VALIDATION ---------------- */
   if (!username || !email || !password || !confirmPassword) {
@@ -142,13 +164,13 @@ export const registerUser = async (req, res) => {
 
 
 export const changePlayerPassword = async (req, res) => {
-  const { id: accountId } = req.params;
+  const { AccountId } = req.user;
   const { password , confirmPassword ,oldPassword} = req.body;
   
   if (!oldPassword) {
     return res.status(400).json({ message: 'You Must Enter The Old Password' });
   }
-  if (!password || !confirmPassword ||!accountId) {
+  if (!password || !confirmPassword ||!AccountId) {
     return res.status(400).json({ message: 'You Must Enter New Password' });
   }
   if(password !== confirmPassword){
@@ -158,7 +180,7 @@ export const changePlayerPassword = async (req, res) => {
   try {
     const [result] = await sqlPool.query(
       'UPDATE account SET Password = ? WHERE accountId = ? AND Password = ?',
-      [password, accountId , oldPassword ]
+      [password, AccountId , oldPassword ]
     );
 
     if (result.affectedRows === 0) {
@@ -200,6 +222,85 @@ export const activateAccount = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+
+export const getUserData = async (req, res) => {
+  try {
+    // console.log(req.user)
+    const { AccountId } = req.user;
+
+    const [sqlResult] = await sqlPool.query(
+      `SELECT Name, EmailAddress, RoleGroupName, 
+              IsBeta, Points, VipLevel, UsedPoints
+       FROM account
+       WHERE AccountId = ?`,
+      [AccountId]
+    );
+
+    if (!sqlResult.length) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const user = sqlResult[0];
+
+    const [nextVipTarget] = await sqlPool.query(
+      `SELECT TargetPoints FROM viplevels WHERE VipLevel = ?`,
+      [user.VipLevel < 20 ? user.VipLevel + 1 : user.VipLevel]
+    );
+
+    res.status(200).json({
+      ...user,
+      NextVipTarget: nextVipTarget[0]?.TargetPoints || null,
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err });
+  }
+};
+
+
+export const IsAdmin = async (req, res) => {
+  try {
+    const { AccountId, Name, RoleGroupName} = req.user;
+    if (!AccountId || !Name || !RoleGroupName) {
+      return res.status(403).json({ message: "Invalid User" });
+    }
+    
+    if(RoleGroupName !== "Owner" || Name !== "gmfirst"){
+      return res.status(200).json({ normalUser: true });
+    }
+
+    const [sqlResult] = await sqlPool.query(
+      `SELECT Name, AccountId, RoleGroupName
+       FROM account
+       WHERE AccountId = ?`,
+      [AccountId]
+    );
+
+    if (!sqlResult.length) {
+      return res.status(403).json({ message: "User not found" });
+    }
+
+    const user = sqlResult[0];
+
+    // console.log(user)
+    if(user.RoleGroupName !== "Owner" || user.Name !== "gmfirst"){
+      return res.status(403).json({ message: "Invalid User Role Or Admin" });
+    }
+
+    const token = jwt.sign({AccountId, Name, RoleGroupName}, process.env.JWT_SECRET,{expiresIn:"1d"})
+
+    res.status(200).json({
+      normalUser: false,
+      token
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err });
+  }
+}
+
+
 
 
 

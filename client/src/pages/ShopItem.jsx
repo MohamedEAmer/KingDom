@@ -6,6 +6,7 @@ import ItemSelector from '../components/ItemSelector';
 import { useEffect, useState,useContext } from 'react';
 import axios from 'axios';
 import { UserContext } from '../context/userContext'
+import { useToast } from "../context/ToastContext";
 
 
 
@@ -15,6 +16,7 @@ const ShopItem = () => {
   const [subCategory , setSubCategory] = useState();
   const {currentUser} = useContext(UserContext)
   const token = currentUser?.token;
+  const { showToast } = useToast();
   const navigate = useNavigate()
 
   useEffect(()=>{

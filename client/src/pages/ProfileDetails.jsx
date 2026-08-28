@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link,useLocation ,useNavigate} from "react-router-dom";
 import axios from 'axios';
-import { CircleCheck, Mailbox  } from "lucide-react";
+import { CircleCheck, Mailbox, ListChecks  } from "lucide-react";
 import SpriteImage from '../components/SpriteImage';
 import { UserContext } from '../context/userContext';
 import BattlePassSlider from '../components/BattlePassSlider';
@@ -11,7 +11,7 @@ const ProfileDetails = () => {
     const location = useLocation();
     const char = location.state?.Char;
     const charId = location.state?.CharId;
-    console.log(location.state)
+    // console.log(location.state)
     const [streak, setStreak] = useState(0);
     const [items, setItems] = useState([]);
     const [charStats, setCharStats] = useState([]);
@@ -37,15 +37,17 @@ const ProfileDetails = () => {
       }
       try {
 
-        const gachaGiftRes = await axios.post(`http://localhost:3000/char/gacha/${charId}/${usedGacha}`,
+        const gachaGiftRes = await axios.post(`http://localhost:3000/char/gacha/${charId}/${usedGacha}`,{},
         {withCredentials: true , headers:{Authorization: `Bearer ${token}`}})
+        console.log(gachaGiftRes.status)
         if(gachaGiftRes.status == 200 ){
           showToast("You Got Your Gift", "success");
           setUsedGacha(usedGacha - 500);
         }
 
       } catch (error) {
-        console.error("Failed to give gacha gift:", err);
+        console.error("Failed to give gacha gift:", error);
+        showToast(error.response.data.message, "error");
       }
 
     };
@@ -162,6 +164,17 @@ const ProfileDetails = () => {
               >
                 <span className="text-white flex items-center justify-center gap-2">
                 My Mail <Mailbox className="inline-block" />
+                </span>
+              </Link>
+
+              <Link
+                to="/myMissions"
+                state={{ Char: char, CharId: charId }}
+                className="block mt-4 w-full bg-yellow-500 text-center py-2 rounded-lg 
+                hover:bg-yellow-600 transition font-semibold"
+              >
+                <span className="text-black flex items-center justify-center gap-2">
+                My Missions <ListChecks className="inline-block" />
                 </span>
               </Link>
 

@@ -12,6 +12,7 @@ const MyMail = () => {
   const charId = location.state?.charId;
   const { currentUser , setCurrentUser} = useContext(UserContext);
   const token = currentUser?.token;
+  const [thisUser,setThisUser] = useState({});
   const [itemsData, setItemsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
@@ -25,6 +26,7 @@ const MyMail = () => {
   }, [])
 
   const handleBetaGifts = async (e) => {
+    // console.log(token)
     e.preventDefault();
     if (!charId) {
       showToast("You must choose a character first.", "error");
@@ -34,15 +36,15 @@ const MyMail = () => {
     try {
       setLoading(true);
   
-      const res = await axios.post(`http://localhost:3000/char/beta/${charId}`,
+      const res = await axios.post(`http://localhost:3000/char/beta/${charId}`,{},
       {withCredentials: true , headers:{Authorization: `Bearer ${token}`}});
   
       // Success response
       if (res.status === 200) {
         showToast("Beta gifts delivered successfully!", "success");
-        setCurrentUser(prev => ({
+        setThisUser(prev => ({
             ...prev,
-            isBeta: 0
+            IsBeta: 0
         }));
           
       } else {
@@ -66,15 +68,54 @@ const MyMail = () => {
   
    
 
+  // useEffect(() => {
+  //   const fetchPlayerItems = async () => {
+  //     if (!currentUser?.token) return;
+
+  //     try {
+  //       const response = await axios.get(`http://localhost:3000/char/mail/${charId}`,
+  //       {withCredentials: true , headers:{Authorization: `Bearer ${token}`}});
+  //       setItemsData(response.data.rows); 
+  //       console.log(response.data.rows)
+  //     } catch (err) {
+  //       console.error("Error fetching player items:", err);
+  //       setItemsData([]);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchPlayerItems();
+  // }, [currentUser]);
+
   useEffect(() => {
     const fetchPlayerItems = async () => {
-      if (!currentUser?.AccountId) return;
-
+      if (!currentUser?.token) return;
+  
+      setLoading(true);
+  
       try {
-        const response = await axios.get(`http://localhost:3000/char/mail/${charId}`,
-        {withCredentials: true , headers:{Authorization: `Bearer ${token}`}});
-        setItemsData(response.data.rows); 
-        console.log(response.data.rows)
+        // Fetch both player mail items and user data in parallel
+        const [playerRes, userRes] = await Promise.all([
+          axios.get(`http://localhost:3000/char/mail/${charId}`, {
+            withCredentials: true,
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get("http://localhost:3000/auth/user", {
+            withCredentials: true,
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+  
+        const playerItems = playerRes.data.rows || [];
+        const userData = userRes.data;
+  
+        // Update state
+        setItemsData(playerItems);
+        setThisUser(userData); // Navbar automatically updates if using context
+        // console.log("User Data:", userData);
+        // console.log("Player Items:", playerItems);
+  
       } catch (err) {
         console.error("Error fetching player items:", err);
         setItemsData([]);
@@ -82,9 +123,10 @@ const MyMail = () => {
         setLoading(false);
       }
     };
-
+  
     fetchPlayerItems();
-  }, [currentUser]);
+  }, [currentUser, charId, token]);
+  
 
   if (loading) {
     return (
@@ -108,7 +150,7 @@ const MyMail = () => {
     <div className='relative mt-30 mb-6 px-4 md:px-16 lg:px-40 xl:px-44 overflow-hidden min-h-[80vh] border border-gray-600 rounded-2xl'>
         <div className="flex items-center justify-between my-6">
             <h2 className="text-2xl font-semibold">Your Mail</h2>
-            {currentUser.isBeta === 1 &&
+            {thisUser.IsBeta === 1 &&
                 <button onClick={handleBetaGifts}
                 className="flex items-center gap-2 bg-yellow-300 hover:bg-yellow-500 cursor-pointer text-gray-600 font-semibold py-2 px-4 rounded-lg transition"
                 >

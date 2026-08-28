@@ -9,14 +9,38 @@ const PlayersManagement = () => {
   const [editingId, setEditingId] = useState(null);
   const [newBalance, setNewBalance] = useState('');
   const {currentUser} = useContext(UserContext)
+  const {setCurrentUser} = useContext(UserContext)
   const token = currentUser?.token;
   const navigate = useNavigate()
-  useEffect(()=>{
-    if(!token || currentUser.role !== "Owner"){
-      showToast("You Can Not Reach This Page", "warning");
-      navigate('/')
-    }
-  }, [])
+  useEffect(() => {
+    const validateAdmin = async () => {
+      try {
+        const adminRes = await axios.get(
+          "http://localhost:3000/auth/type",
+          {
+            withCredentials: true,
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+  
+        if (
+          !token ||
+          !adminRes.data?.token||
+          adminRes.data?.normalUser
+        ) {
+          showToast("You Can Not Reach This Page", "warning");
+          setCurrentUser(null)
+          navigate("/");
+        }
+  
+      } catch (error) {
+        setCurrentUser(null)
+        navigate("/");
+      }
+    };
+  
+    validateAdmin();
+  }, []);
 
   useEffect(() => {
     const fetchPlayers = async () => {

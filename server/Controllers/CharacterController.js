@@ -99,27 +99,29 @@ export const getDailyData = async (req, res) => {
       const [rows] = await sqlPool.query(
         `
           SELECT
-          d.Amount,
-          d.Creator,
-          d.Created,
-          d.Recived,
-          t.Name,
-          COALESCE(
-            SUBSTRING_INDEX(i.ImageFullName, '.', 1),
-            SUBSTRING_INDEX(t.img_name , '.',1)
-          ) AS ItemImg
-        FROM asda2donationitem d
-        LEFT JOIN asda2itemtemlate t ON t.Id = d.ItemId
-        LEFT JOIN itemsimglist i ON i.ItemId = d.ItemId
-        WHERE d.RecieverId = ?
-        ORDER BY d.Created DESC;
+            d.Amount,
+            d.Creator,
+            d.Created,
+            d.Recived,
+            t.Name,
+            COALESCE(
+              SUBSTRING_INDEX(i.ImageFullName, '.', 1),
+              SUBSTRING_INDEX(t.img_name, '.', 1)
+            ) AS ItemImg
+          FROM asda2donationitem d
+          LEFT JOIN asda2itemtemlate t ON t.Id = d.ItemId
+          LEFT JOIN itemsimglist i ON i.ItemId = d.ItemId
+          WHERE d.RecieverId = ?
+          ORDER BY d.Created DESC
+          LIMIT 25
         `,
         [charId]
       );
+      
   
-      if (!rows || rows.length === 0) {
-        return res.status(400).json({ message: "You don't have any Mails." });
-      }
+      // if (!rows || rows.length === 0) {
+      //   return res.status(400).json({ message: "You don't have any Mails." });
+      // }
         
       return res.status(200).json({rows});
   
@@ -129,98 +131,235 @@ export const getDailyData = async (req, res) => {
     }
 };
 
-export const giveCharBeta = async (req, res) => {
-  const charId = req.params.id;
+// export const giveCharBeta = async (req, res) => {
+//   const charId = req.params.id;
 
+//   if (!charId) {
+//     return res.status(400).json({ message: "Missing character ID." });
+//   }
+
+//   const connection = await sqlPool.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     // 1) Fetch character → AccountId
+//     const [charResult] = await connection.query(
+//       `SELECT AccountId FROM characterrecord WHERE EntityLowId = ?`,
+//       [charId]
+//     );
+
+//     if (!charResult || charResult.length === 0) {
+//       await connection.rollback();
+//       return res.status(400).json({ message: "Character not found." });
+//     }
+
+//     const accountId = charResult[0].AccountId;
+
+//     // 2) Fetch account → RoleGroupName
+//     const [accountResult] = await connection.query(
+//       `SELECT IsBeta FROM account WHERE AccountId = ?`,
+//       [accountId]
+//     );
+
+//     if (!accountResult || accountResult.length === 0) {
+//       await connection.rollback();
+//       return res.status(400).json({ message: "Account not found." });
+//     }
+
+//     const role = accountResult[0].IsBeta;
+
+//     // 3) If already Player → STOP (means already received or not beta)
+//     if (role === 0) {
+//       await connection.rollback();
+//       return res.status(400).json({
+//         message: "Character is not a beta player or already received the gifts."
+//       });
+//     }
+
+//     // 4) Get beta gifts
+//     const [betaGifts] = await connection.query(`
+//       SELECT ItemId, Amount FROM betagifts
+//     `);
+
+//     if (!betaGifts || betaGifts.length === 0) {
+//       await connection.rollback();
+//       return res.status(400).json({ message: "No beta gifts found." });
+//     }
+
+//     // 5) Insert beta gifts into asda2donationitem
+//     for (const gift of betaGifts) {
+//       await connection.query(
+//         `
+//         INSERT INTO asda2donationitem
+//           (ItemId, Amount, RecieverId, Creator, IsSoulBound, Recived, Created)
+//         VALUES (?, ?, ?, '~Beta Gifts~', 1, 0, NOW())
+//         `,
+//         [gift.ItemId, gift.Amount, charId]
+//       );
+//     }
+
+//     // 6) Update RoleGroupName → Player (Beta gifts delivered)
+//     await connection.query(
+//       `UPDATE account SET IsBeta = 0 WHERE AccountId = ?`,
+//       [accountId]
+//     );
+
+//     // 7) Commit transaction
+//     await connection.commit();
+
+//     return res.status(200).json({
+//       message: "Beta gifts delivered successfully.",
+//       delivered: betaGifts.length
+//     });
+
+//   } catch (err) {
+//     console.error("Error giving Beta gifts:", err);
+//     await connection.rollback();
+//     return res.status(500).json({ message: "Internal server error." });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
+export const giveCharBeta = async (req, res) => {
+  const charId = Number(req.params.id);
   if (!charId) {
     return res.status(400).json({ message: "Missing character ID." });
   }
 
   const connection = await sqlPool.getConnection();
+  const fail = (status, message) => {
+    const err = new Error(message);
+    err.httpStatus = status;
+    throw err;
+  };
 
   try {
     await connection.beginTransaction();
 
-    // 1) Fetch character → AccountId
-    const [charResult] = await connection.query(
-      `SELECT AccountId FROM characterrecord WHERE EntityLowId = ?`,
+    // 1) Find accountId
+    const [[charRow]] = await connection.query(
+      "SELECT AccountId FROM characterrecord WHERE EntityLowId = ?",
       [charId]
     );
+    if (!charRow) fail(400, "Character not found.");
 
-    if (!charResult || charResult.length === 0) {
-      await connection.rollback();
-      return res.status(400).json({ message: "Character not found." });
-    }
+    const accountId = Number(charRow.AccountId);
 
-    const accountId = charResult[0].AccountId;
-
-    // 2) Fetch account → RoleGroupName
-    const [accountResult] = await connection.query(
-      `SELECT IsBeta FROM account WHERE AccountId = ?`,
+    // 2) Atomically claim beta (prevents duplicates + races)
+    const [claim] = await connection.query(
+      "UPDATE account SET IsBeta = 0 WHERE AccountId = ? AND IsBeta = 1",
       [accountId]
     );
 
-    if (!accountResult || accountResult.length === 0) {
-      await connection.rollback();
-      return res.status(400).json({ message: "Account not found." });
+    if (claim.affectedRows === 0) {
+      fail(400, "Character is not a beta player or already received the gifts.");
     }
 
-    const role = accountResult[0].IsBeta;
-
-    // 3) If already Player → STOP (means already received or not beta)
-    if (role === 0) {
-      await connection.rollback();
-      return res.status(400).json({
-        message: "Character is not a beta player or already received the gifts."
-      });
-    }
-
-    // 4) Get beta gifts
-    const [betaGifts] = await connection.query(`
-      SELECT ItemId, Amount FROM betagifts
-    `);
-
+    // 3) Load gifts
+    const [betaGifts] = await connection.query(
+      "SELECT ItemId, Amount FROM betagifts"
+    );
     if (!betaGifts || betaGifts.length === 0) {
-      await connection.rollback();
-      return res.status(400).json({ message: "No beta gifts found." });
+      fail(400, "No beta gifts found.");
     }
 
-    // 5) Insert beta gifts into asda2donationitem
-    for (const gift of betaGifts) {
-      await connection.query(
-        `
-        INSERT INTO asda2donationitem
-          (ItemId, Amount, RecieverId, Creator, IsSoulBound, Recived, Created)
-        VALUES (?, ?, ?, '~Beta Gifts~', 1, 0, NOW())
-        `,
-        [gift.ItemId, gift.Amount, charId]
-      );
-    }
+    // 4) Bulk insert gifts
+    const values = [];
+    const placeholders = betaGifts
+      .map(g => {
+        values.push(Number(g.ItemId), Number(g.Amount), charId);
+        return "(?, ?, ?, '~Beta Gifts~', 1, 0, NOW())";
+      })
+      .join(",");
 
-    // 6) Update RoleGroupName → Player (Beta gifts delivered)
     await connection.query(
-      `UPDATE account SET IsBeta = 0 WHERE AccountId = ?`,
-      [accountId]
+      `INSERT INTO asda2donationitem
+       (ItemId, Amount, RecieverId, Creator, IsSoulBound, Recived, Created)
+       VALUES ${placeholders}`,
+      values
     );
 
-    // 7) Commit transaction
     await connection.commit();
-
     return res.status(200).json({
       message: "Beta gifts delivered successfully.",
       delivered: betaGifts.length
     });
 
   } catch (err) {
-    console.error("Error giving Beta gifts:", err);
-    await connection.rollback();
-    return res.status(500).json({ message: "Internal server error." });
+    try { await connection.rollback(); } catch {}
+    return res
+      .status(err.httpStatus || 500)
+      .json({ message: err.httpStatus ? err.message : "Internal server error." });
   } finally {
+    // safety net
+    try { await connection.rollback(); } catch {}
     connection.release();
   }
 };
 
 
+
+// missions system 24-7-2026
+export const getMissionCategories = async (req, res) => {
+  try {
+    const [rows] = await sqlPool.query(
+      `
+        SELECT DISTINCT Category
+        FROM battlepassmissions
+        WHERE Category IS NOT NULL AND Category <> ''
+        ORDER BY Category
+      `
+    );
+
+    return res.status(200).json({ categories: rows.map((r) => r.Category) });
+  } catch (err) {
+    console.error("Error fetching mission categories:", err);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+export const getCharMissions = async (req, res) => {
+  const charId = req.params.id;
+  const { category } = req.query;
+
+  if (!charId) {
+    return res.status(400).json({ message: "Missing character." });
+  }
+
+  try {
+    let query = `
+      SELECT
+        m.id AS MissionId,
+        m.MissionName,
+        m.Target,
+        m.Category,
+        m.Duration,
+        COALESCE(d.Progress, 0) AS Progress,
+        COALESCE(d.status, 0) AS Status,
+        d.FinishedDate
+      FROM battlepassmissions m
+      LEFT JOIN battlepassdatarecord d
+        ON d.MissionId = m.id AND d.PlayerId = ?
+    `;
+    const params = [charId];
+
+    if (category && category !== "All") {
+      query += ` WHERE m.Category = ?`;
+      params.push(category);
+    }
+
+    query += ` ORDER BY m.Category, m.id`;
+
+    const [rows] = await sqlPool.query(query, params);
+
+    return res.status(200).json({ rows });
+  } catch (err) {
+    console.error("Error fetching missions:", err);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
 
 export const getGachaUsed = async (req, res) => {
   const charId = req.params.id
@@ -246,70 +385,149 @@ export const getGachaUsed = async (req, res) => {
   }
 };
 
+// export const giveGachaGift = async (req, res) => {
+//   const charId = Number(req.params.id);
+//   const gachaUsedParam = Number(req.params.gacha);
+
+//   if (!charId || gachaUsedParam === undefined || gachaUsedParam < 500) {
+//     return res.status(400).json({ message: "Missing or invalid character Gacha info." });
+//   }
+
+//   const connection = await sqlPool.getConnection();
+
+//   try {
+//     await connection.beginTransaction();
+
+//     // 1) Fetch current GachaUsed and AccountId from characterrecord
+//     const [charRows] = await connection.query(
+//       `SELECT GachaUsed, AccountId FROM characterrecord WHERE EntityLowId = ?`,
+//       [charId]
+//     );
+
+//     if (!charRows || charRows.length === 0) {
+//       await connection.rollback();
+//       return res.status(404).json({ message: "Character not found." });
+//     }
+
+//     const { GachaUsed: currentGachaUsed, AccountId } = charRows[0];
+
+//     // Ensure gachaUsedParam does not exceed actual GachaUsed
+//     const gachaUsed = Math.min(gachaUsedParam, currentGachaUsed);
+
+//     if (gachaUsed < 500) {
+//       await connection.rollback();
+//       return res.status(400).json({ message: "Not enough Gacha points to claim gift." });
+//     }
+
+//     const newGacha = currentGachaUsed - 500;
+
+//     // 2) Insert Gacha gift
+//     await connection.query(
+//       `INSERT INTO asda2donationitem
+//         (ItemId, Amount, RecieverId, Creator, IsSoulBound, Recived, Created)
+//        VALUES (56820, 1, ?, '~GachaGift~', 1, 0, NOW())`,
+//       [charId]
+//     );
+
+//     // 3) Update GachaUsed
+//     await connection.query(
+//       `UPDATE characterrecord SET GachaUsed = ? WHERE EntityLowId = ?`,
+//       [newGacha, charId]
+//     );
+
+//     await connection.commit();
+
+//     return res.status(200).json({
+//       message: "Gacha gift delivered successfully.",
+//       remainingGacha: newGacha,
+//       charId,
+//       accountId: AccountId
+//     });
+
+//   } catch (err) {
+//     console.error("Error giving Gacha gifts:", err);
+//     await connection.rollback();
+//     return res.status(500).json({ message: "Internal server error." });
+//   } finally {
+//     connection.release();
+//   }
+// };
+
 export const giveGachaGift = async (req, res) => {
   const charId = Number(req.params.id);
   const gachaUsedParam = Number(req.params.gacha);
+  // console.log(req.params)
 
-  if (!charId || gachaUsedParam === undefined || gachaUsedParam < 500) {
-    return res.status(400).json({ message: "Missing or invalid character Gacha info." });
+  if (!charId || Number.isNaN(gachaUsedParam)) {
+    return res.status(400).json({ message: "Missing or invalid character info." });
+  }
+
+  // Optional fast-fail (don’t trust it for correctness)
+  if (gachaUsedParam < 500) {
+    return res.status(400).json({ message: "Not enough Gacha points to claim gift." });
   }
 
   const connection = await sqlPool.getConnection();
+  const fail = (status, message) => {
+    const err = new Error(message);
+    err.httpStatus = status;
+    throw err;
+  };
 
   try {
     await connection.beginTransaction();
 
-    // 1) Fetch current GachaUsed and AccountId from characterrecord
-    const [charRows] = await connection.query(
-      `SELECT GachaUsed, AccountId FROM characterrecord WHERE EntityLowId = ?`,
+    // Check if the character is online
+    const [[charStatus]] = await connection.query(
+      "SELECT IsOnline FROM characterrecord WHERE EntityLowId = ?",
       [charId]
     );
 
-    if (!charRows || charRows.length === 0) {
-      await connection.rollback();
-      return res.status(404).json({ message: "Character not found." });
+    if (!charStatus) fail(404, "Character not found.");
+    if (charStatus.IsOnline === 1) fail(400, "Character must be offline to claim the Gacha gift.");
+
+    const [upd] = await connection.query(
+      "UPDATE characterrecord SET GachaUsed = GachaUsed - 500 WHERE EntityLowId = ? AND GachaUsed >= 500",
+      [charId]
+    );
+
+    if (upd.affectedRows === 0) {
+      const [[exists]] = await connection.query(
+        "SELECT 1 AS ok FROM characterrecord WHERE EntityLowId = ?",
+        [charId]
+      );
+      if (!exists) fail(404, "Character not found.");
+      fail(400, "Not enough Gacha points to claim gift.");
     }
 
-    const { GachaUsed: currentGachaUsed, AccountId } = charRows[0];
-
-    // Ensure gachaUsedParam does not exceed actual GachaUsed
-    const gachaUsed = Math.min(gachaUsedParam, currentGachaUsed);
-
-    if (gachaUsed < 500) {
-      await connection.rollback();
-      return res.status(400).json({ message: "Not enough Gacha points to claim gift." });
-    }
-
-    const newGacha = currentGachaUsed - 500;
-
-    // 2) Insert Gacha gift
     await connection.query(
       `INSERT INTO asda2donationitem
-        (ItemId, Amount, RecieverId, Creator, IsSoulBound, Recived, Created)
-       VALUES (56820, 1, ?, '~GachaGift~', 1, 0, NOW())`,
+       (ItemId, Amount, RecieverId, Creator, IsSoulBound, Recived, Created)
+       VALUES (58188, 1, ?, '~GachaGift~', 1, 0, NOW())`,
       [charId]
     );
 
-    // 3) Update GachaUsed
-    await connection.query(
-      `UPDATE characterrecord SET GachaUsed = ? WHERE EntityLowId = ?`,
-      [newGacha, charId]
+    const [[row]] = await connection.query(
+      "SELECT GachaUsed, AccountId FROM characterrecord WHERE EntityLowId = ?",
+      [charId]
     );
 
     await connection.commit();
 
     return res.status(200).json({
       message: "Gacha gift delivered successfully.",
-      remainingGacha: newGacha,
+      remainingGacha: Number(row?.GachaUsed ?? 0),
       charId,
-      accountId: AccountId
+      accountId: row?.AccountId
     });
 
   } catch (err) {
-    console.error("Error giving Gacha gifts:", err);
-    await connection.rollback();
-    return res.status(500).json({ message: "Internal server error." });
+    try { await connection.rollback(); } catch {}
+    return res
+      .status(err.httpStatus || 500)
+      .json({ message: err.httpStatus ? err.message : "Internal server error." });
   } finally {
+    try { await connection.rollback(); } catch {}
     connection.release();
   }
 };

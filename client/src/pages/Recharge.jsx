@@ -2,11 +2,12 @@ import { CoinsIcon} from 'lucide-react';
 import React from 'react';
 
 const pointPackages = [
-  { points: 100, bonus: 0, price: 9.99 },
-  { points: 250, bonus: 50, price: 24.99 },
-  { points: 500, bonus: 100, price: 39.99 },
-  { points: 1000, bonus: 334, price: 69.99 },
-  { points: 1500, bonus: 500, price: 89.99 },
+  { points: 5000, bonus: 250, price: 4.99 },
+  { points: 10000, bonus: 1000, price: 9.99 },
+  { points: 20000, bonus: 4000, price: 19.99 },
+  { points: 50000, bonus: 25000, price: 49.99 },
+  { points: 80000, bonus: 64000, price: 79.99 },
+  { points: 100000, bonus: 100000, price: 99.99 },
 ];
 
 const wallet = [
@@ -33,7 +34,7 @@ const Recharge = () => {
       <h1 className="text-2xl font-bold mb-8 text-left">Buy Points</h1>
 
       {/* Points Packages */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-8 mb-16">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
         {pointPackages.map((pkg, i) => (
           <div
             key={i}
@@ -45,7 +46,7 @@ const Recharge = () => {
             </div>
 
             {/* Points Text */}
-            <div className="text-2xl font-bold text-white">{pkg.points} Points</div>
+            <div className="text-2xl font-bold text-white">{pkg.points + pkg.bonus} Points</div>
 
             {/* Description */}
             <p className="text-sm mt-1 text-gray-300">
@@ -53,7 +54,7 @@ const Recharge = () => {
               {pkg.bonus > 0 && (
                 <>
                   {' '}
-                  ({pkg.points - pkg.bonus} <span className="text-green-500"> + {pkg.bonus}</span>)
+                  ( <span className="text-green-500"> + {pkg.bonus}</span>)
                 </>
               )}
             </p>
@@ -74,7 +75,7 @@ const Recharge = () => {
         {/* Wallet Section */}
         <div className="bg-black/60 border border-gray-600 rounded-xl p-6 shadow-md">
           <h2 className="text-xl font-semibold mb-4">My Wallet</h2>
-          {wallet.map((item, i) => (
+          {/* {wallet.map((item, i) => (
             <div key={i} className="flex items-center justify-between border-b py-3 border-gray-300">
               <div>
                 <div className="font-medium text-blue-500">Recharge: {item.points} points</div>
@@ -82,7 +83,7 @@ const Recharge = () => {
               </div>
               <div className="font-semibold text-green-500"> + {item.balance}pts</div>
             </div>
-          ))}
+          ))} */}
         </div>
 
         {/* Payment History */}
@@ -100,7 +101,7 @@ const Recharge = () => {
               </tr>
             </thead>
             <tbody>
-              {history.map((h, i) => (
+              {/* {history.map((h, i) => (
                 <tr key={i} className="border-b border-gray-300 ">
                   <td className="py-2">{h.id}</td>
                   <td className="py-2">{h.type}</td>
@@ -109,7 +110,7 @@ const Recharge = () => {
                   <td className="py-2">{h.date}</td>
                   <td className="py-2 text-green-500 font-bold">✔</td>
                 </tr>
-              ))}
+              ))} */}
             </tbody>
           </table>
         </div>

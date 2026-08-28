@@ -1,4 +1,4 @@
-import { ArrowRight, CircleDollarSign,CircleFadingArrowUp , X,CrownIcon, FlameIcon, GemIcon, ArrowBigDownDash , SwordsIcon } from 'lucide-react';
+import { ArrowRight, CircleDollarSign,CircleFadingArrowUp , X,CrownIcon, FlameIcon, GemIcon, ArrowBigDownDash , SwordsIcon, Coins } from 'lucide-react';
 import React from 'react'
 import { useNavigate } from 'react-router-dom';
 import OffersItem from './OffersItem';
@@ -9,6 +9,7 @@ import axios from 'axios';
 const TrendSection = () => {
   const [topRanks, setTopRanks] = useState([]);
   const [hotItems, setHotItems] = useState([]);
+  const [king, setKing] = useState(null);
   const [error,setError]= useState('')
 
   useEffect(() => {
@@ -17,12 +18,14 @@ const TrendSection = () => {
         const data ={
           category : "2"
         }
-        const [ranksRes, hotRes] = await Promise.all([
+        const [ranksRes, hotRes, kingRes] = await Promise.all([
           axios.get('http://localhost:3000/player/ranks'),
-          axios.get('http://localhost:3000/shop/category' , {params : data})
+          axios.get('http://localhost:3000/shop/category' , {params : data}),
+          axios.get('http://localhost:3000/player/king')
         ]);
         setTopRanks(ranksRes.data.data);
         setHotItems(hotRes.data);
+        setKing(kingRes.data.king);
       } catch (err) {
         console.error('Failed to fetch data:', err);
       }
@@ -66,7 +69,7 @@ const TrendSection = () => {
                     <td className="px-4 py-3">10 ~ 29</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <img src="../../public/faction_1.png" alt="Dark" className="w-5 h-5" />
+                        <img src="../faction_1.png" alt="Dark" className="w-5 h-5" />
                         <span>Dark</span>
                       </div>
                     </td>
@@ -78,7 +81,7 @@ const TrendSection = () => {
                     <td className="px-4 py-3">30 ~ 49</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <img src="../../public/faction_2.png" alt="Chaos" className="w-5 h-5" />
+                        <img src="../faction_2.png" alt="Chaos" className="w-5 h-5" />
                         <span>Chaos</span>
                       </div>
                     </td>
@@ -224,6 +227,36 @@ const TrendSection = () => {
               </li>
             ))}
           </ul>
+        </div>
+
+        {/* Card: The Game King */}
+        <div className="bg-gray-800 rounded-2xl shadow-md px-6 py-6 mt-6">
+          <div className="flex justify-center items-center gap-2 mb-6">
+            <h2 className="text-lg font-semibold text-white">The Game King Is</h2>
+            <CrownIcon className="w-8 h-8 text-yellow-500" />
+          </div>
+
+          {king ? (
+            <div className="flex flex-col items-center gap-2 bg-gray-900 rounded-xl px-4 py-4">
+              <span className="text-xl font-bold text-yellow-400">{king.Name}</span>
+              <span className="flex items-center gap-2 text-sm text-gray-300">
+                <Coins className="w-4 h-4 text-yellow-400" />
+                {king.Tokens} Tokens Delivered
+              </span>
+            </div>
+          ) : (
+            <p className="text-center text-gray-400 font-medium py-4">
+              There is no King yet
+            </p>
+          )}
+
+          <button
+            onClick={() => { navigate('/royals'); scrollTo(0, 0); }}
+            className="w-full mt-4 flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 rounded-lg transition"
+          >
+            All Royals
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>
